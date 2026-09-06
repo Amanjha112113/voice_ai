@@ -1,4 +1,4 @@
-# EchoDrive — Antigravity Engineering Specification
+# EchoDrive — Engineering Specification
 
 ## Purpose
 
