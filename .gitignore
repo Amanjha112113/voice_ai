@@ -38,5 +38,17 @@ htmlcov/
 .vscode/
 .idea/
 
-# Large External Reference Clones
+# Large External Reference Clones & Temporary Media
 reference/
+
+# Extra Scratch Notes (Keeping core architecture & system docs only)
+ADR-*.md
+TEN_ANALYSIS.md
+AGENTS.md
+data-model.md
+low-latency.md
+phases.md
+repo-adoption.md
+security.md
+testing-observability.md
+voice-runtime.md
