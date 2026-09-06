@@ -1,0 +1,1383 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EchoDrive — AI Voice Sales Executive | Luxury Dealership</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚗</text></svg>">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              cyan: '#0284c7',
+              teal: '#0ea5e9',
+              indigo: '#4f46e5',
+              violet: '#7c3aed',
+              amber: '#d97706',
+              emerald: '#059669',
+              rose: '#e11d48',
+              light: '#f8fafc',
+              surface: '#ffffff',
+              card: '#f1f5f9'
+            }
+          },
+          fontFamily: {
+            sans: ['Outfit', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+            display: ['Space Grotesk', 'sans-serif']
+          },
+          animation: {
+            'orbit-slow': 'orbit 16s linear infinite',
+            'orbit-reverse': 'orbit-reverse 20s linear infinite',
+            'orbit-tilted': 'orbit-tilted 14s linear infinite',
+            'float': 'floating 5s ease-in-out infinite',
+            'pulse-glow': 'pulseGlow 3s ease-in-out infinite',
+            'radar-wave': 'radarWave 2.8s cubic-bezier(0, 0.2, 0.8, 1) infinite',
+            'scanline': 'scanline 2.5s ease-in-out infinite',
+            'bar-dance': 'barDance 0.6s ease-in-out infinite alternate',
+            'ambient-drift': 'ambientDrift 22s ease-in-out infinite alternate'
+          },
+          keyframes: {
+            orbit: {
+              '0%': { transform: 'rotate(0deg)' },
+              '100%': { transform: 'rotate(360deg)' }
+            },
+            'orbit-reverse': {
+              '0%': { transform: 'rotate(360deg)' },
+              '100%': { transform: 'rotate(0deg)' }
+            },
+            'orbit-tilted': {
+              '0%': { transform: 'rotateX(55deg) rotateY(15deg) rotate(0deg)' },
+              '100%': { transform: 'rotateX(55deg) rotateY(15deg) rotate(360deg)' }
+            },
+            floating: {
+              '0%, 100%': { transform: 'translateY(0px) scale(1)' },
+              '50%': { transform: 'translateY(-10px) scale(1.018)' }
+            },
+            pulseGlow: {
+              '0%, 100%': { opacity: '0.3', transform: 'scale(0.98)' },
+              '50%': { opacity: '0.75', transform: 'scale(1.08)' }
+            },
+            radarWave: {
+              '0%': { transform: 'scale(0.9)', opacity: '0.7' },
+              '100%': { transform: 'scale(1.75)', opacity: '0' }
+            },
+            scanline: {
+              '0%': { transform: 'translateY(-100%)' },
+              '100%': { transform: 'translateY(250%)' }
+            },
+            barDance: {
+              '0%': { height: '3px' },
+              '100%': { height: '22px' }
+            },
+            ambientDrift: {
+              '0%': { transform: 'translate(0, 0) scale(1)' },
+              '50%': { transform: 'translate(45px, -35px) scale(1.15)' },
+              '100%': { transform: 'translate(-35px, 45px) scale(0.92)' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap"
+    rel="stylesheet">
+
+  <!-- Agora Web SDK NG -->
+  <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js"></script>
+
+  <style>
+    /* CSS Variables for Light Reactive State Themes */
+    :root {
+      --state-accent: #0284c7;
+      --state-glow: rgba(2, 132, 199, 0.35);
+      --state-ring: rgba(2, 132, 199, 0.3);
+      --radar-color: rgba(2, 132, 199, 0.2);
+    }
+
+    body.state-listening {
+      --state-accent: #4f46e5;
+      --state-glow: rgba(79, 70, 229, 0.4);
+      --state-ring: rgba(79, 70, 229, 0.35);
+      --radar-color: rgba(79, 70, 229, 0.25);
+    }
+
+    body.state-thinking {
+      --state-accent: #d97706;
+      --state-glow: rgba(217, 119, 6, 0.45);
+      --state-ring: rgba(217, 119, 6, 0.35);
+      --radar-color: rgba(217, 119, 6, 0.25);
+    }
+
+    body.state-speaking {
+      --state-accent: #0284c7;
+      --state-glow: rgba(2, 132, 199, 0.45);
+      --state-ring: rgba(2, 132, 199, 0.35);
+      --radar-color: rgba(2, 132, 199, 0.25);
+    }
+
+    body.state-interrupting {
+      --state-accent: #e11d48;
+      --state-glow: rgba(225, 29, 72, 0.45);
+      --state-ring: rgba(225, 29, 72, 0.35);
+      --radar-color: rgba(225, 29, 72, 0.25);
+    }
+
+    /* Luxury Light Showroom Grid Background */
+    .bg-showroom-mesh {
+      background-color: #f8fafc;
+      background-image:
+        radial-gradient(circle at 50% 25%, rgba(255, 255, 255, 0.95) 0%, #edf2f7 100%),
+        linear-gradient(rgba(15, 23, 42, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(15, 23, 42, 0.04) 1px, transparent 1px);
+      background-size: 100% 100%, 48px 48px, 48px 48px;
+    }
+
+    /* Avatar Halo Shadow */
+    .avatar-halo {
+      box-shadow: 0 10px 40px var(--state-glow), 0 0 0 1px var(--state-accent);
+      border-color: var(--state-accent);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Light Glassmorphic Panels */
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(226, 232, 240, 0.95);
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      box-shadow: 0 8px 25px rgba(15, 23, 42, 0.06);
+    }
+
+    /* Individual Voice Wave Bars */
+    .voice-bar:nth-child(1) {
+      animation-delay: 0.05s;
+    }
+
+    .voice-bar:nth-child(2) {
+      animation-delay: 0.18s;
+    }
+
+    .voice-bar:nth-child(3) {
+      animation-delay: 0.32s;
+    }
+
+    .voice-bar:nth-child(4) {
+      animation-delay: 0.45s;
+    }
+
+    .voice-bar:nth-child(5) {
+      animation-delay: 0.22s;
+    }
+
+    .voice-bar:nth-child(6) {
+      animation-delay: 0.12s;
+    }
+
+    .voice-bar:nth-child(7) {
+      animation-delay: 0.38s;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.05);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(15, 23, 42, 0.2);
+      border-radius: 9999px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(2, 132, 199, 0.5);
+    }
+  </style>
+</head>
+
+<body
+  class="bg-[#f8fafc] text-slate-900 h-screen w-screen flex flex-col justify-between items-center p-3 sm:p-5 md:p-6 overflow-hidden relative select-none font-sans bg-showroom-mesh transition-colors duration-500">
+
+  <!-- ========================================================= -->
+  <!--             INTERACTIVE BACKGROUND AMBIENCE               -->
+  <!-- ========================================================= -->
+  <canvas id="particleCanvas" class="absolute inset-0 pointer-events-none z-0"></canvas>
+
+  <!-- Soft Ambient Multi-Colored Floating Glow Orbs -->
+  <div
+    class="absolute -top-32 -left-32 w-[34rem] h-[34rem] bg-indigo-500/18 rounded-full blur-[130px] pointer-events-none animate-ambient-drift">
+  </div>
+  <div
+    class="absolute -bottom-32 -right-32 w-[34rem] h-[34rem] bg-sky-500/22 rounded-full blur-[130px] pointer-events-none animate-ambient-drift"
+    style="animation-delay: -7s;"></div>
+  <div
+    class="absolute top-1/4 -right-20 w-[28rem] h-[28rem] bg-emerald-400/15 rounded-full blur-[120px] pointer-events-none animate-ambient-drift"
+    style="animation-delay: -14s;"></div>
+  <div
+    class="absolute bottom-1/4 -left-20 w-[28rem] h-[28rem] bg-amber-400/15 rounded-full blur-[120px] pointer-events-none animate-ambient-drift"
+    style="animation-delay: -19s;"></div>
+  <div
+    class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[42rem] h-[42rem] bg-blue-400/10 rounded-full blur-[150px] pointer-events-none">
+  </div>
+
+  <!-- Subtle Geometric Depth Concentric Rings in Background -->
+  <div
+    class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[520px] rounded-full border border-sky-400/10 animate-orbit-slow pointer-events-none">
+  </div>
+  <div
+    class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[680px] h-[680px] rounded-full border border-dashed border-indigo-400/10 animate-orbit-reverse pointer-events-none">
+  </div>
+
+  <!-- ========================================================= -->
+  <!--                      TOP NAVBAR                           -->
+  <!-- ========================================================= -->
+  <header
+    class="w-full max-w-5xl z-20 flex justify-between items-center px-4 sm:px-6 py-2.5 sm:py-3 rounded-full glass-panel transition-all">
+
+    <!-- Brand Identity -->
+    <div class="flex items-center gap-3">
+      <div
+        class="relative flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-tr from-sky-500 via-blue-600 to-indigo-600 text-white font-black shadow-[0_4px_16px_rgba(2,132,199,0.35)]">
+        <span class="text-xl leading-none">🚗</span>
+        <span class="absolute -top-1 -right-1 flex h-3 w-3">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-3 w-3 bg-sky-500"></span>
+        </span>
+      </div>
+      <div>
+        <div class="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
+          EchoDrive
+        </div>
+        <p class="text-[11px] text-slate-500 hidden sm:block font-medium">Dealership Realtime Voice AI</p>
+      </div>
+    </div>
+
+    <!-- Right Controls: Inventory, Leads & State Pill -->
+    <div class="flex items-center gap-2 sm:gap-3">
+      <button id="btnOpenInventory"
+        class="px-3 sm:px-4 py-1.5 rounded-full bg-slate-100/90 hover:bg-slate-200/90 border border-slate-200/80 hover:border-sky-400 text-xs font-semibold text-slate-700 hover:text-slate-900 transition-all flex items-center gap-1.5 active:scale-95 shadow-sm">
+        <span>📋</span> <span class="hidden md:inline">Live</span> Inventory
+      </button>
+
+      <button id="btnOpenLeads"
+        class="px-3 sm:px-4 py-1.5 rounded-full bg-slate-100/90 hover:bg-slate-200/90 border border-slate-200/80 hover:border-sky-400 text-xs font-semibold text-slate-700 hover:text-slate-900 transition-all flex items-center gap-1.5 active:scale-95 shadow-sm">
+        <span>👥</span> CRM <span class="hidden md:inline">Leads</span>
+      </button>
+
+      <!-- Live Status Pill -->
+      <div id="statusCapsule"
+        class="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100/90 border border-slate-200/90 text-[11px] font-bold uppercase tracking-wider transition-all shadow-inner">
+        <span id="statusDot" class="w-2.5 h-2.5 rounded-full bg-slate-400 transition-all"></span>
+        <span id="statusText" class="text-slate-600">IDLE</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================================= -->
+  <!--        CENTER STAGE: ANIMATED HUMAN SALES AVATAR         -->
+  <!-- ========================================================= -->
+  <main id="avatarStage"
+    class="my-auto flex flex-col items-center justify-center z-10 cursor-pointer group max-w-2xl w-full px-4">
+
+    <div class="relative flex items-center justify-center">
+
+      <!-- Expanding Radar Pulse Ring (Listening State) -->
+      <div id="radarRing"
+        class="absolute w-72 h-72 rounded-full border border-sky-400/40 opacity-0 pointer-events-none"></div>
+
+      <!-- Outer Dynamic Pulsing Glow -->
+      <div id="avatarAura"
+        class="absolute w-80 h-80 sm:w-96 sm:h-96 rounded-full bg-sky-500/15 blur-3xl transition-all duration-500 pointer-events-none">
+      </div>
+
+      <!-- 3D Orbital Tech Gyroscope Rings -->
+      <div
+        class="absolute w-72 h-72 sm:w-80 sm:h-80 rounded-full border border-dashed border-sky-500/35 animate-orbit-slow pointer-events-none flex items-center justify-center">
+        <div class="w-2 h-2 rounded-full bg-sky-500 shadow-[0_0_8px_#0284c7] absolute -top-1"></div>
+      </div>
+
+      <div
+        class="absolute w-64 h-64 sm:w-72 sm:h-72 rounded-full border border-dotted border-indigo-500/40 animate-orbit-reverse pointer-events-none flex items-center justify-center">
+        <div class="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_#4f46e5] absolute -bottom-1"></div>
+      </div>
+
+      <div
+        class="absolute w-80 h-80 sm:w-88 sm:h-88 rounded-full border border-slate-300/60 animate-orbit-tilted pointer-events-none">
+      </div>
+
+      <!-- Main Animated Human Avatar Container -->
+      <div id="avatarCard"
+        class="relative w-52 h-52 sm:w-60 sm:h-60 md:w-64 md:h-64 rounded-full p-1.5 avatar-halo border-2 bg-gradient-to-b from-white via-slate-100 to-slate-200 transition-all duration-300 animate-float shadow-[0_15px_45px_rgba(15,23,42,0.12)]">
+
+        <!-- Avatar Photo Mask -->
+        <div class="w-full h-full rounded-full overflow-hidden relative shadow-inner bg-slate-900">
+
+          <!-- Human Moving Avatar Asset (Autoplay Looping Video / GIF) -->
+          <video id="avatarVideo" src="/static/avatar.mp4" autoplay loop muted playsinline
+            class="w-full h-full object-cover object-center filter contrast-[1.05] brightness-95 transition-all duration-500 group-hover:scale-105"></video>
+
+          <!-- Holographic Visor Scanline Beam (Active during THINKING / SPEAKING) -->
+          <div id="scanlineBeam"
+            class="absolute inset-x-0 h-14 bg-gradient-to-b from-transparent via-sky-400/25 to-transparent pointer-events-none animate-scanline opacity-75">
+          </div>
+
+          <!-- Bottom Glass Gradient Vignette -->
+          <div
+            class="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-slate-950/70 via-slate-950/20 to-transparent">
+          </div>
+        </div>
+
+        <!-- Live Audio Waveform Mouth Sync Overlay (Appears during SPEAKING) -->
+        <div id="voiceWaveOverlay"
+          class="absolute bottom-3 inset-x-0 mx-auto w-28 h-7 rounded-full bg-white/90 backdrop-blur-md border border-slate-200 flex items-center justify-center gap-1 px-2.5 shadow-md transition-all duration-300 opacity-0 transform translate-y-1">
+          <span class="voice-bar w-1 bg-sky-600 rounded-full animate-bar-dance h-1"></span>
+          <span class="voice-bar w-1 bg-sky-600 rounded-full animate-bar-dance h-1"></span>
+          <span class="voice-bar w-1 bg-sky-600 rounded-full animate-bar-dance h-1"></span>
+          <span class="voice-bar w-1 bg-sky-600 rounded-full animate-bar-dance h-1"></span>
+          <span class="voice-bar w-1 bg-sky-600 rounded-full animate-bar-dance h-1"></span>
+          <span class="voice-bar w-1 bg-sky-600 rounded-full animate-bar-dance h-1"></span>
+          <span class="voice-bar w-1 bg-sky-600 rounded-full animate-bar-dance h-1"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Consultant Info Badge -->
+    <div
+      class="mt-4 flex items-center gap-2.5 px-4 py-1.5 rounded-full glass-card shadow-sm transition-transform hover:scale-105">
+      <span class="relative flex h-2.5 w-2.5">
+        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
+        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-[0_0_8px_#10b981]"></span>
+      </span>
+      <span class="text-xs font-bold text-slate-800 tracking-wide">Geeta <span class="text-slate-500 font-normal">•
+          Dealership Sales Advisor</span></span>
+    </div>
+
+    <!-- Real-time Audio Frequency Spectrum Canvas -->
+    <canvas id="soundwaveCanvas" class="w-80 h-9 mt-2.5 rounded-full opacity-90 transition-opacity"></canvas>
+
+    <!-- Subtitle & Live Speech Glass Box -->
+    <div id="captionCard"
+      class="mt-2.5 w-full max-w-lg min-h-[4.2rem] px-6 py-3.5 rounded-2xl glass-card flex items-center justify-center text-center transition-all duration-300 border border-slate-200/90 hover:border-sky-400">
+      <p id="caption" class="text-sm sm:text-base font-medium text-slate-700 leading-relaxed transition-colors">
+        Tap <strong class="text-sky-600 font-bold">"Start Conversation"</strong> or speak to test drive luxury cars.
+      </p>
+    </div>
+
+    <!-- Quick Inquiry Suggestions Pill Bar -->
+    <div id="quickPills" class="mt-3 flex flex-wrap items-center justify-center gap-2 max-w-xl transition-all">
+      <button
+        class="quick-pill px-3.5 py-1.5 rounded-full text-xs font-medium bg-white/90 hover:bg-sky-50 border border-slate-200 hover:border-sky-400 text-slate-700 hover:text-sky-700 transition-all active:scale-95 shadow-sm">
+        "Show me Mercedes SUVs"
+      </button>
+      <button
+        class="quick-pill px-3.5 py-1.5 rounded-full text-xs font-medium bg-white/90 hover:bg-sky-50 border border-slate-200 hover:border-sky-400 text-slate-700 hover:text-sky-700 transition-all active:scale-95 shadow-sm">
+        "Cars under ₹80 Lakh"
+      </button>
+      <button
+        class="quick-pill px-3.5 py-1.5 rounded-full text-xs font-medium bg-white/90 hover:bg-sky-50 border border-slate-200 hover:border-sky-400 text-slate-700 hover:text-sky-700 transition-all active:scale-95 shadow-sm">
+        "Book a test drive tomorrow"
+      </button>
+    </div>
+  </main>
+
+  <!-- ========================================================= -->
+  <!--                 BOTTOM CONTROLS & HUD                     -->
+  <!-- ========================================================= -->
+  <footer class="w-full max-w-xl z-20 flex flex-col items-center gap-3">
+
+    <!-- Hero Toggle Button -->
+    <button id="btnToggle"
+      class="w-full sm:w-auto px-10 py-3.5 rounded-full font-bold text-base cursor-pointer flex items-center justify-center gap-3 transition-all duration-300 bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 text-white shadow-[0_10px_30px_rgba(2,132,199,0.35)] hover:shadow-[0_15px_40px_rgba(2,132,199,0.5)] hover:-translate-y-0.5 active:translate-y-0 active:scale-98">
+      <span class="text-lg">🎙️</span> <span>Start Conversation</span>
+    </button>
+
+    <!-- Telemetry HUD Bar -->
+    <div
+      class="flex items-center justify-between sm:justify-center gap-4 sm:gap-6 px-6 py-2 rounded-full glass-panel text-[11px] font-mono text-slate-600 shadow-sm w-full sm:w-auto">
+      <div class="flex items-center gap-1.5">
+        <span class="text-slate-400">TTFA:</span>
+        <span id="hudTTFA" class="text-sky-600 font-bold">-- ms</span>
+      </div>
+      <div class="w-px h-3 bg-slate-200"></div>
+      <div class="flex items-center gap-1.5">
+        <span class="text-slate-400">TTFT:</span>
+        <span id="hudTTFT" class="text-sky-600 font-bold">-- ms</span>
+      </div>
+      <div class="w-px h-3 bg-slate-200"></div>
+      <div class="flex items-center gap-1.5">
+        <span class="text-slate-400">Mic:</span>
+        <span id="hudMic" class="text-emerald-600 font-bold">Ready</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ========================================================= -->
+  <!--            MODAL DRAWERS (INVENTORY & CRM LEADS)          -->
+  <!-- ========================================================= -->
+  <div id="modalOverlay"
+    class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden justify-center items-center p-4 transition-all">
+    <div
+      class="bg-white border border-slate-200 w-full max-w-2xl max-h-[85vh] rounded-3xl p-6 overflow-y-auto text-slate-900 shadow-2xl transform transition-all">
+      <div class="flex justify-between items-center pb-3 mb-4 border-b border-slate-100">
+        <h3 id="modalTitle" class="text-lg font-bold text-sky-700 flex items-center gap-2">Dealership Live Inventory
+        </h3>
+        <button id="btnCloseModal"
+          class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 flex items-center justify-center transition-all text-sm font-bold">✕</button>
+      </div>
+      <div id="modalContent" class="flex flex-col gap-3 text-sm">
+        Loading...
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!--             VOICE CONTROLLER & ANIMATION SCRIPTS          -->
+  <!-- ========================================================= -->
+  <script>
+    // ==========================================
+    // 1. Interactive Ambient Particle Starfield
+    // ==========================================
+    class ParticleMesh {
+      constructor(canvasId) {
+        this.canvas = document.getElementById(canvasId);
+        this.ctx = this.canvas.getContext('2d');
+        this.particles = [];
+        this.particleCount = 55;
+        this.maxDistance = 120;
+        this.mouse = { x: -1000, y: -1000, radius: 140 };
+        this.init();
+        window.addEventListener('resize', () => this.resize());
+        window.addEventListener('mousemove', (e) => {
+          this.mouse.x = e.clientX;
+          this.mouse.y = e.clientY;
+        });
+        window.addEventListener('mouseleave', () => {
+          this.mouse.x = -1000;
+          this.mouse.y = -1000;
+        });
+      }
+
+      init() {
+        this.resize();
+        this.particles = [];
+        for (let i = 0; i < this.particleCount; i++) {
+          this.particles.push({
+            x: Math.random() * this.width,
+            y: Math.random() * this.height,
+            baseX: 0,
+            baseY: 0,
+            radius: Math.random() * 2.2 + 0.8,
+            speedX: (Math.random() - 0.5) * 0.45,
+            speedY: (Math.random() - 0.5) * 0.45,
+            alpha: Math.random() * 0.5 + 0.25,
+            hue: Math.random() > 0.5 ? 200 : 235 // sky blue or indigo
+          });
+        }
+        this.animate();
+      }
+
+      resize() {
+        this.width = window.innerWidth;
+        this.height = window.innerHeight;
+        this.canvas.width = this.width * window.devicePixelRatio;
+        this.canvas.height = this.height * window.devicePixelRatio;
+        this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+      }
+
+      animate() {
+        this.ctx.clearRect(0, 0, this.width, this.height);
+
+        // Update and draw particles
+        for (let i = 0; i < this.particles.length; i++) {
+          const p = this.particles[i];
+          p.x += p.speedX;
+          p.y += p.speedY;
+
+          // Screen wrap
+          if (p.x < 0) p.x = this.width;
+          if (p.x > this.width) p.x = 0;
+          if (p.y < 0) p.y = this.height;
+          if (p.y > this.height) p.y = 0;
+
+          // Mouse proximity reaction
+          const dx = this.mouse.x - p.x;
+          const dy = this.mouse.y - p.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < this.mouse.radius) {
+            const force = (this.mouse.radius - dist) / this.mouse.radius;
+            p.x -= (dx / dist) * force * 1.5;
+            p.y -= (dy / dist) * force * 1.5;
+          }
+
+          // Draw node
+          this.ctx.beginPath();
+          this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          this.ctx.fillStyle = `hsla(${p.hue}, 90%, 55%, ${p.alpha})`;
+          this.ctx.fill();
+
+          // Draw constellation proximity lines
+          for (let j = i + 1; j < this.particles.length; j++) {
+            const p2 = this.particles[j];
+            const djx = p.x - p2.x;
+            const djy = p.y - p2.y;
+            const d = Math.sqrt(djx * djx + djy * djy);
+            if (d < this.maxDistance) {
+              const lineAlpha = (1 - d / this.maxDistance) * 0.22;
+              this.ctx.beginPath();
+              this.ctx.moveTo(p.x, p.y);
+              this.ctx.lineTo(p2.x, p2.y);
+              this.ctx.strokeStyle = `rgba(2, 132, 199, ${lineAlpha})`;
+              this.ctx.lineWidth = 0.8;
+              this.ctx.stroke();
+            }
+          }
+        }
+        requestAnimationFrame(() => this.animate());
+      }
+    }
+
+    const particleMesh = new ParticleMesh('particleCanvas');
+
+    // ==========================================
+    // 2. Realtime Voice Controller State Machine
+    // ==========================================
+    class VoiceController {
+      constructor() {
+        this.state = 'IDLE';
+        this.activeSession = null;
+        this.agoraClient = null;
+        this.localAudioTrack = null;
+        this.ws = null;
+        this.recognition = null;
+        this.isRecognitionActive = false;
+        this.isExplicitlyStopping = false;
+        this.isProcessingTurn = false;
+
+        this.speechQueue = [];
+        this.activeUtterance = null;
+        this.isSpeakingChunk = false;
+        this.watchdogTimer = null;
+        this.currentSpeakingText = "";
+
+        this.accumulatedSpeech = "";
+        this.turnDebounceTimer = null;
+        this.micHeartbeat = null;
+
+        this.audioCtx = null;
+        this.analyser = null;
+        this.micStream = null;
+
+        // DOM elements cache
+        this.avatarStage = document.getElementById('avatarStage');
+        this.avatarCard = document.getElementById('avatarCard');
+        this.avatarAura = document.getElementById('avatarAura');
+        this.radarRing = document.getElementById('radarRing');
+        this.voiceWaveOverlay = document.getElementById('voiceWaveOverlay');
+        this.scanlineBeam = document.getElementById('scanlineBeam');
+        this.statusCapsule = document.getElementById('statusCapsule');
+        this.statusDot = document.getElementById('statusDot');
+        this.statusText = document.getElementById('statusText');
+        this.caption = document.getElementById('caption');
+        this.btnToggle = document.getElementById('btnToggle');
+        this.hudTTFA = document.getElementById('hudTTFA');
+        this.hudTTFT = document.getElementById('hudTTFT');
+        this.hudMic = document.getElementById('hudMic');
+        this.soundwaveCanvas = document.getElementById('soundwaveCanvas');
+        this.canvasCtx = this.soundwaveCanvas.getContext('2d');
+
+        this.initSpeechSynthesis();
+        this.bindEvents();
+        this.initCanvasSize();
+      }
+
+      initCanvasSize() {
+        this.soundwaveCanvas.width = 320 * window.devicePixelRatio;
+        this.soundwaveCanvas.height = 36 * window.devicePixelRatio;
+        this.canvasCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
+      }
+
+      initSpeechSynthesis() {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.onvoiceschanged = () => {
+            window.speechSynthesis.getVoices();
+          };
+          window.speechSynthesis.getVoices();
+        }
+      }
+
+      bindEvents() {
+        this.btnToggle.addEventListener('click', async () => {
+          if (this.state === 'IDLE') {
+            await this.start();
+          } else {
+            await this.stop();
+          }
+        });
+
+        this.avatarStage.addEventListener('click', () => {
+          if (this.state === 'SPEAKING' || this.state === 'THINKING') {
+            this.handleBargeIn("barge_in_tap");
+          }
+        });
+
+        // Quick Suggestion Pills Click Handlers
+        document.querySelectorAll('.quick-pill').forEach(pill => {
+          pill.addEventListener('click', async () => {
+            const query = pill.textContent.trim().replace(/^"|"$/g, '');
+            if (this.state === 'IDLE') {
+              await this.start();
+              setTimeout(() => {
+                this.caption.textContent = `"${query}"`;
+                this.dispatchTurn(query);
+              }, 800);
+            } else {
+              this.handleBargeIn(query);
+              this.caption.textContent = `"${query}"`;
+              this.dispatchTurn(query);
+            }
+          });
+        });
+      }
+
+      setState(newState, text = null) {
+        this.state = newState;
+
+        // Update document body theme classes
+        document.body.classList.remove('state-listening', 'state-thinking', 'state-speaking', 'state-interrupting');
+        document.body.classList.add(`state-${newState.toLowerCase()}`);
+
+        this.statusText.textContent = newState;
+
+        if (newState === 'LISTENING') {
+          this.statusDot.className = 'w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_8px_#6366f1]';
+          this.voiceWaveOverlay.classList.add('opacity-0', 'translate-y-1');
+          this.voiceWaveOverlay.classList.remove('opacity-100', 'translate-y-0');
+          this.radarRing.className = 'absolute w-72 h-72 rounded-full border border-indigo-400/50 animate-radar-wave pointer-events-none';
+          this.avatarAura.className = 'absolute w-80 h-80 sm:w-96 sm:h-96 rounded-full bg-indigo-500/20 blur-3xl transition-all duration-500 pointer-events-none';
+        } else if (newState === 'THINKING') {
+          this.statusDot.className = 'w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_#f59e0b]';
+          this.voiceWaveOverlay.classList.add('opacity-0', 'translate-y-1');
+          this.radarRing.className = 'absolute w-72 h-72 rounded-full border border-amber-400/50 animate-pulse pointer-events-none';
+          this.avatarAura.className = 'absolute w-80 h-80 sm:w-96 sm:h-96 rounded-full bg-amber-500/20 blur-3xl transition-all duration-500 pointer-events-none';
+        } else if (newState === 'SPEAKING') {
+          this.statusDot.className = 'w-2.5 h-2.5 rounded-full bg-sky-500 shadow-[0_0_10px_#0284c7]';
+          this.voiceWaveOverlay.classList.remove('opacity-0', 'translate-y-1');
+          this.voiceWaveOverlay.classList.add('opacity-100', 'translate-y-0');
+          this.radarRing.className = 'absolute w-72 h-72 rounded-full border border-sky-400/50 animate-radar-wave pointer-events-none';
+          this.avatarAura.className = 'absolute w-80 h-80 sm:w-96 sm:h-96 rounded-full bg-sky-500/25 blur-3xl transition-all duration-500 pointer-events-none';
+        } else if (newState === 'INTERRUPTING' || newState === 'ACKNOWLEDGING') {
+          this.statusDot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_10px_#e11d48]';
+          this.voiceWaveOverlay.classList.add('opacity-0');
+          this.avatarAura.className = 'absolute w-80 h-80 sm:w-96 sm:h-96 rounded-full bg-rose-500/25 blur-3xl transition-all duration-300 pointer-events-none';
+        } else {
+          this.statusDot.className = 'w-2.5 h-2.5 rounded-full bg-slate-400';
+          this.voiceWaveOverlay.classList.add('opacity-0');
+          this.radarRing.className = 'absolute w-72 h-72 rounded-full border border-sky-400/30 opacity-0 pointer-events-none';
+          this.avatarAura.className = 'absolute w-80 h-80 sm:w-96 sm:h-96 rounded-full bg-sky-500/15 blur-3xl transition-all duration-500 pointer-events-none';
+        }
+
+        if (text !== null) {
+          this.caption.textContent = text;
+          this.caption.className = 'text-sm sm:text-base font-semibold text-slate-800 transition-colors';
+        }
+      }
+
+      async setupMicrophoneAnalyzer() {
+        try {
+          this.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const source = this.audioCtx.createMediaStreamSource(this.micStream);
+          this.analyser = this.audioCtx.createAnalyser();
+          this.analyser.fftSize = 64;
+          source.connect(this.analyser);
+
+          this.drawSoundwaves();
+        } catch (err) {
+          console.warn("Could not access microphone AudioContext:", err);
+        }
+      }
+
+      drawSoundwaves() {
+        if (this.state === 'IDLE') {
+          this.canvasCtx.clearRect(0, 0, 320, 36);
+          return;
+        }
+        requestAnimationFrame(() => this.drawSoundwaves());
+
+        const width = 320;
+        const height = 36;
+        this.canvasCtx.clearRect(0, 0, width, height);
+
+        if (!this.analyser) return;
+
+        const dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+        this.analyser.getByteFrequencyData(dataArray);
+
+        const barCount = 22;
+        const barWidth = 4;
+        const gap = 6;
+        const startX = (width - (barCount * (barWidth + gap))) / 2;
+
+        let sum = 0;
+        for (let i = 0; i < barCount; i++) {
+          const val = dataArray[i % dataArray.length] / 255.0;
+          sum += val;
+          const barHeight = Math.max(3, val * 28);
+          const x = startX + i * (barWidth + gap);
+          const y = (height - barHeight) / 2;
+
+          let color = '#0284c7';
+          if (this.state === 'LISTENING') color = '#4f46e5';
+          if (this.state === 'THINKING') color = '#d97706';
+          if (this.state === 'SPEAKING') color = '#0284c7';
+          if (this.state === 'INTERRUPTING' || this.state === 'ACKNOWLEDGING') color = '#e11d48';
+
+          this.canvasCtx.fillStyle = color;
+          this.canvasCtx.beginPath();
+          this.canvasCtx.roundRect(x, y, barWidth, barHeight, 4);
+          this.canvasCtx.fill();
+        }
+
+        const avgEnergy = sum / barCount;
+        if (this.state === 'LISTENING') {
+          const scale = Math.min(1.08, 1.0 + avgEnergy * 0.28);
+          this.avatarCard.style.transform = `scale(${scale})`;
+          this.avatarAura.style.opacity = `${Math.min(0.9, 0.25 + avgEnergy * 0.7)}`;
+        }
+      }
+
+      normalizeTextForSpeech(text) {
+        if (!text) return text;
+        return text
+          .replace(/₹\s*(\d+(?:\.\d+)?)\s*(?:Lakhs?|L|lac|lacs)\b/gi, '$1 Lakh Rupees')
+          .replace(/₹\s*(\d+(?:\.\d+)?)\s*(?:Crores?|Cr)\b/gi, '$1 Crore Rupees')
+          .replace(/₹\s*(\d+(?:\.\d+)?)/g, '$1 Rupees')
+          .replace(/\b(?:Rs\.?|INR)\s*(\d+(?:\.\d+)?)\s*(?:Lakhs?|L|lac|lacs)\b/gi, '$1 Lakh Rupees')
+          .replace(/\b(?:Rs\.?|INR)\s*(\d+(?:\.\d+)?)\s*(?:Crores?|Cr)\b/gi, '$1 Crore Rupees')
+          .replace(/\b(?:Rs\.?|INR)\s*(\d+(?:\.\d+)?)/gi, '$1 Rupees')
+          .replace(/\bbhp\b/gi, 'B H P')
+          .replace(/\bLWB\b/gi, 'Long Wheelbase')
+          .replace(/\bkmpl\b/gi, 'kilometers per liter')
+          .replace(/\b4MATIC\b/gi, '4-Matic')
+          .replace(/\bEV\b/g, 'E V');
+      }
+
+      forceRestartRecognition() {
+        if (this.state === 'IDLE' || this.isExplicitlyStopping) return;
+        if (this.recognition) {
+          try {
+            this.isRecognitionActive = false;
+            this.recognition.abort();
+          } catch (e) { }
+          setTimeout(() => {
+            try {
+              if (this.state !== 'IDLE' && !this.isExplicitlyStopping) {
+                this.recognition.start();
+              }
+            } catch (e) { }
+          }, 30);
+        }
+      }
+
+      ensureRecognitionListening() {
+        if (this.state === 'IDLE' || this.isExplicitlyStopping) return;
+        if (this.recognition && !this.isRecognitionActive) {
+          try {
+            this.recognition.start();
+          } catch (e) { }
+        }
+      }
+
+      enqueueAudioChunk(text, generationId) {
+        if (!text || !text.trim()) return;
+        this.speechQueue.push({ text: text.trim(), generationId });
+        this.processSpeechQueue();
+      }
+
+      processSpeechQueue() {
+        if (this.isSpeakingChunk) return;
+
+        if (this.speechQueue.length === 0) {
+          if (this.state === 'SPEAKING') {
+            this.setState('LISTENING', 'Listening...');
+            this.forceRestartRecognition();
+          }
+          return;
+        }
+
+        const item = this.speechQueue.shift();
+        if (!item || !item.text) {
+          this.processSpeechQueue();
+          return;
+        }
+
+        this.isSpeakingChunk = true;
+        this.currentSpeakingText = item.text.toLowerCase();
+        this.setState('SPEAKING', item.text);
+
+        const spokenText = this.normalizeTextForSpeech(item.text);
+
+        // Cancel any pending speech synthesis before starting new audio
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+        }
+
+        // 1. Try Streaming Neural Audio from backend endpoint (/tts/synthesize)
+        const ttsUrl = `/tts/synthesize?text=${encodeURIComponent(spokenText)}`;
+        const audio = new Audio(ttsUrl);
+        this.activeAudio = audio;
+
+        let hasFinished = false;
+        let hasStartedNeural = false;
+        let hasFallbackTriggered = false;
+
+        const finishAudio = () => {
+          if (hasFinished) return;
+          hasFinished = true;
+          this.activeAudio = null;
+          this.isSpeakingChunk = false;
+          this.currentSpeakingText = "";
+          this.processSpeechQueue();
+          if (this.speechQueue.length === 0) {
+            this.forceRestartRecognition();
+          }
+        };
+
+        audio.onplay = () => {
+          hasStartedNeural = true;
+          this.setState('SPEAKING', item.text);
+        };
+
+        audio.onended = () => finishAudio();
+
+        audio.onerror = () => {
+          if (!hasStartedNeural && !hasFallbackTriggered) {
+            hasFallbackTriggered = true;
+            this.activeAudio = null;
+            this.playWebSpeechFallback(spokenText, item.text, finishAudio);
+          }
+        };
+
+        audio.play().catch(() => {
+          if (!hasStartedNeural && !hasFallbackTriggered) {
+            hasFallbackTriggered = true;
+            this.activeAudio = null;
+            this.playWebSpeechFallback(spokenText, item.text, finishAudio);
+          }
+        });
+      }
+
+      playWebSpeechFallback(spokenText, originalText, onComplete) {
+        if (!('speechSynthesis' in window)) {
+          onComplete();
+          return;
+        }
+
+        window.speechSynthesis.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(spokenText);
+        utterance.rate = 1.15;
+        utterance.pitch = 1.0;
+
+        const voices = window.speechSynthesis.getVoices();
+        const naturalVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Karen') || v.name.includes('Veena') || v.name.includes('Victoria')));
+        if (naturalVoice) {
+          utterance.voice = naturalVoice;
+        }
+
+        window._activeUtterance = utterance;
+        this.activeUtterance = utterance;
+
+        let finished = false;
+        const finishUtterance = () => {
+          if (finished) return;
+          finished = true;
+          window._activeUtterance = null;
+          this.activeUtterance = null;
+          onComplete();
+        };
+
+        utterance.onend = () => finishUtterance();
+        utterance.onerror = () => finishUtterance();
+
+        try {
+          window.speechSynthesis.speak(utterance);
+        } catch (e) {
+          finishUtterance();
+        }
+      }
+
+      handleBargeIn(triggerWord = "") {
+        if (this.state === 'INTERRUPTING' || this.state === 'ACKNOWLEDGING') {
+          return;
+        }
+
+        console.log("⚡ [VoiceController] Immediate Barge-In triggered by:", triggerWord || "onset");
+
+        this.speechQueue = [];
+        this.isSpeakingChunk = false;
+        this.currentSpeakingText = "";
+        if (this.watchdogTimer) clearTimeout(this.watchdogTimer);
+
+        if (this.activeAudio) {
+          try {
+            this.activeAudio.pause();
+            this.activeAudio.currentTime = 0;
+          } catch (e) {}
+          this.activeAudio = null;
+        }
+
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+        }
+        this.activeUtterance = null;
+
+        this.setState('INTERRUPTING', triggerWord ? `"${triggerWord}..."` : 'Listening...');
+
+        if (this.activeSession) {
+          fetch(`/sessions/${this.activeSession.session_id}/interrupt`, { method: 'POST' }).catch(() => { });
+        }
+
+        this.setState('ACKNOWLEDGING', 'OK, listening...');
+
+        if ('speechSynthesis' in window) {
+          const ackUtterance = new SpeechSynthesisUtterance("OK.");
+          ackUtterance.rate = 1.15;
+          const voices = window.speechSynthesis.getVoices();
+          const naturalVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Karen') || v.name.includes('Veena')));
+          if (naturalVoice) {
+            ackUtterance.voice = naturalVoice;
+          }
+
+          ackUtterance.onend = () => {
+            if (this.state === 'ACKNOWLEDGING') {
+              this.setState('LISTENING', 'Listening...');
+              this.forceRestartRecognition();
+            }
+          };
+
+          ackUtterance.onerror = () => {
+            if (this.state === 'ACKNOWLEDGING') {
+              this.setState('LISTENING', 'Listening...');
+              this.forceRestartRecognition();
+            }
+          };
+
+          window.speechSynthesis.speak(ackUtterance);
+        } else {
+          this.setState('LISTENING', 'Listening...');
+          this.forceRestartRecognition();
+        }
+      }
+
+      setupSpeechRecognition() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+          console.warn("Web Speech API not supported in this browser.");
+          return;
+        }
+
+        this.recognition = new SpeechRecognition();
+        this.recognition.continuous = true;
+        this.recognition.interimResults = true;
+        this.recognition.lang = 'en-IN';
+
+        this.recognition.onstart = () => {
+          this.isRecognitionActive = true;
+          console.log("Continuous microphone listening active (en-IN)...");
+          this.hudMic.textContent = "Listening";
+          this.hudMic.className = "text-indigo-600 font-bold";
+        };
+
+        this.recognition.onresult = (event) => {
+          let interimTranscript = '';
+          let finalTranscript = '';
+
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            const trans = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              finalTranscript += trans;
+            } else {
+              interimTranscript += trans;
+            }
+          }
+
+          const activeText = (finalTranscript || interimTranscript).trim().toLowerCase();
+
+          if (activeText && this.state === 'SPEAKING') {
+            const cleanSpeaking = (this.currentSpeakingText || "").toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+            const cleanActive = activeText.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+
+            // Check explicit interruption intent keywords
+            const interruptKeywords = ['wait', 'stop', 'hold on', 'pause', 'no', 'listen', 'how much', 'what is', 'tell me', 'can you', 'i want', 'show me', 'book'];
+            const hasInterruptWord = interruptKeywords.some(kw => cleanActive.includes(kw));
+
+            // Check overlap ratio with current speaking text
+            const activeWords = cleanActive.split(' ').filter(w => w.length > 1);
+            const speakingWords = cleanSpeaking.split(' ');
+            const matchCount = activeWords.filter(w => speakingWords.some(sw => sw.includes(w) || w.includes(sw))).length;
+            const overlapRatio = activeWords.length > 0 ? (matchCount / activeWords.length) : 0;
+
+            const isSelfEcho = !hasInterruptWord && (
+              cleanSpeaking.includes(cleanActive) ||
+              cleanActive.includes(cleanSpeaking.slice(0, 20)) ||
+              cleanSpeaking.startsWith(cleanActive) ||
+              overlapRatio >= 0.4
+            );
+
+            if (!isSelfEcho) {
+              this.handleBargeIn(activeText);
+            }
+          } else if (activeText && this.state === 'THINKING') {
+            this.handleBargeIn(activeText);
+          }
+
+          if (interimTranscript.trim()) {
+            const preview = (this.accumulatedSpeech ? this.accumulatedSpeech + " " : "") + interimTranscript.trim();
+            this.caption.textContent = `"${preview}"`;
+            this.caption.className = 'text-sm sm:text-base font-semibold text-slate-800 transition-colors';
+            if (this.state !== 'ACKNOWLEDGING' && this.state !== 'INTERRUPTING' && this.state !== 'SPEAKING') {
+              this.setState('LISTENING');
+            }
+          }
+
+          if (finalTranscript.trim()) {
+            const newSegment = finalTranscript.trim();
+            if (newSegment.length < 1) return;
+
+            this.accumulatedSpeech = (this.accumulatedSpeech ? this.accumulatedSpeech + " " : "") + newSegment;
+            this.caption.textContent = `"${this.accumulatedSpeech}"`;
+
+            if (this.turnDebounceTimer) clearTimeout(this.turnDebounceTimer);
+
+            const debounceTime = (this.state === 'ACKNOWLEDGING' || this.state === 'INTERRUPTING') ? 1200 : 400;
+
+            this.turnDebounceTimer = setTimeout(() => {
+              if (this.accumulatedSpeech.trim()) {
+                const fullSpeech = this.accumulatedSpeech.trim();
+                this.accumulatedSpeech = "";
+                console.log("Final Complete Turn Speech:", fullSpeech);
+                this.dispatchTurn(fullSpeech);
+              }
+            }, debounceTime);
+          }
+        };
+
+        this.recognition.onerror = (e) => {
+          if (e.error !== 'no-speech') {
+            console.warn("Speech recognition notice:", e.error);
+          }
+          if (e.error === 'not-allowed') {
+            this.hudMic.textContent = "Blocked";
+            this.hudMic.className = "text-rose-600 font-bold";
+          }
+        };
+
+        this.recognition.onend = () => {
+          this.isRecognitionActive = false;
+          if (this.state !== 'IDLE' && !this.isExplicitlyStopping) {
+            setTimeout(() => {
+              try {
+                if (this.state !== 'IDLE' && !this.isRecognitionActive) {
+                  this.recognition.start();
+                }
+              } catch (err) { }
+            }, 100);
+          }
+        };
+      }
+
+      async dispatchTurn(text) {
+        if (!text.trim() || !this.activeSession || this.isProcessingTurn) return;
+        this.isProcessingTurn = true;
+        this.speechQueue = [];
+        this.setState('THINKING', 'Thinking...');
+
+        try {
+          const resp = await fetch(`/sessions/${this.activeSession.session_id}/turns`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_text: text })
+          });
+          const data = await resp.json();
+          if (data.ttfa_ms) {
+            this.hudTTFA.textContent = `${data.ttfa_ms.toFixed(0)} ms`;
+          }
+          if (data.llm_ttft_ms) {
+            this.hudTTFT.textContent = `${data.llm_ttft_ms.toFixed(0)} ms`;
+          }
+        } catch (err) {
+          console.error("Turn dispatch error:", err);
+          this.setState('LISTENING', 'Listening...');
+          this.forceRestartRecognition();
+        } finally {
+          this.isProcessingTurn = false;
+        }
+      }
+
+      connectWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        this.ws = new WebSocket(`${protocol}//${window.location.host}/ws/events`);
+
+        let fullResponse = "";
+
+        this.ws.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+
+          if (data.type === 'LLMToken' && data.payload.delta) {
+            fullResponse += data.payload.delta;
+            this.caption.textContent = fullResponse;
+          }
+
+          if (data.type === 'ChunkReady' && data.payload.text) {
+            console.log("⚡ Progressive Chunk Received:", data.payload.text);
+            this.enqueueAudioChunk(data.payload.text, data.payload.generation_id);
+          }
+
+          if (data.type === 'TurnCompleted') {
+            fullResponse = "";
+            if (data.payload.ttfa_ms) {
+              this.hudTTFA.textContent = `${data.payload.ttfa_ms.toFixed(0)} ms`;
+            }
+          }
+
+          if (data.type === 'BargeInDetected') {
+            this.handleBargeIn();
+            fullResponse = "";
+          }
+        };
+      }
+
+      async start() {
+        try {
+          this.btnToggle.disabled = true;
+          this.btnToggle.innerHTML = `<span>⏳</span> <span>Connecting...</span>`;
+          this.isExplicitlyStopping = false;
+
+          await this.setupMicrophoneAnalyzer();
+
+          const resp = await fetch('/sessions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ language: 'en-IN' })
+          });
+          this.activeSession = await resp.json();
+
+          try {
+            if (typeof AgoraRTC !== 'undefined') {
+              AgoraRTC.setLogLevel(3);
+              this.agoraClient = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+              await this.agoraClient.join(
+                this.activeSession.app_id,
+                this.activeSession.channel,
+                this.activeSession.token || null,
+                null
+              );
+              this.localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+              await this.agoraClient.publish([this.localAudioTrack]);
+              console.log("Agora Media Plane connected successfully.");
+            }
+          } catch (agoraErr) {
+            console.log("Agora Media Plane standby: streaming via realtime control plane");
+            if (this.agoraClient) {
+              try { this.agoraClient.leave(); } catch (e) { }
+              this.agoraClient = null;
+            }
+          }
+
+          this.connectWebSocket();
+          this.setupSpeechRecognition();
+
+          if (this.recognition) {
+            try {
+              this.recognition.start();
+            } catch (e) { }
+          }
+
+          if (this.micHeartbeat) clearInterval(this.micHeartbeat);
+          this.micHeartbeat = setInterval(() => {
+            if (this.state !== 'IDLE' && !this.isExplicitlyStopping && !this.isRecognitionActive) {
+              this.ensureRecognitionListening();
+            }
+          }, 800);
+
+          this.setState('LISTENING', 'Listening...');
+          this.btnToggle.disabled = false;
+          this.btnToggle.className = 'w-full sm:w-auto px-10 py-3.5 rounded-full font-bold text-base cursor-pointer flex items-center justify-center gap-3 transition-all duration-300 bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 shadow-[0_4px_16px_rgba(225,29,72,0.15)] active:scale-98';
+          this.btnToggle.innerHTML = '<span>🛑</span> <span>End Conversation</span>';
+
+          const greeting = "Hello! I am Geeta from EchoDrive. Which vehicle model or budget range are you exploring today?";
+          this.enqueueAudioChunk(greeting, "init_gen");
+        } catch (err) {
+          console.error("Start Error:", err);
+          this.btnToggle.disabled = false;
+          this.btnToggle.className = 'w-full sm:w-auto px-10 py-3.5 rounded-full font-bold text-base cursor-pointer flex items-center justify-center gap-3 transition-all duration-300 bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 text-white shadow-[0_10px_30px_rgba(2,132,199,0.35)] hover:shadow-[0_15px_40px_rgba(2,132,199,0.5)] hover:-translate-y-0.5 active:translate-y-0';
+          this.btnToggle.innerHTML = '<span>🎙️</span> <span>Start Conversation</span>';
+          alert("Could not start conversation: " + err.message);
+        }
+      }
+
+      async stop() {
+        this.isExplicitlyStopping = true;
+        this.speechQueue = [];
+        if (this.micHeartbeat) clearInterval(this.micHeartbeat);
+        if (this.watchdogTimer) clearTimeout(this.watchdogTimer);
+        if (this.turnDebounceTimer) clearTimeout(this.turnDebounceTimer);
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
+        this.isProcessingTurn = false;
+
+        if (this.recognition) {
+          try {
+            this.recognition.stop();
+          } catch (e) { }
+        }
+        if (this.micStream) {
+          this.micStream.getTracks().forEach(t => t.stop());
+        }
+        if (this.audioCtx) {
+          this.audioCtx.close();
+        }
+        if (this.localAudioTrack) this.localAudioTrack.close();
+        if (this.agoraClient) await this.agoraClient.leave();
+
+        if (this.activeSession) {
+          await fetch(`/sessions/${this.activeSession.session_id}`, { method: 'DELETE' }).catch(() => { });
+          this.activeSession = null;
+        }
+        if (this.ws) this.ws.close();
+
+        this.setState('IDLE', 'Tap "Start Conversation" or speak to test drive luxury cars.');
+        this.btnToggle.className = 'w-full sm:w-auto px-10 py-3.5 rounded-full font-bold text-base cursor-pointer flex items-center justify-center gap-3 transition-all duration-300 bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 text-white shadow-[0_10px_30px_rgba(2,132,199,0.35)] hover:shadow-[0_15px_40px_rgba(2,132,199,0.5)] hover:-translate-y-0.5 active:translate-y-0';
+        this.btnToggle.innerHTML = '<span>🎙️</span> <span>Start Conversation</span>';
+        this.hudTTFA.textContent = '-- ms';
+        this.hudTTFT.textContent = '-- ms';
+        this.hudMic.textContent = 'Ready';
+        this.hudMic.className = 'text-emerald-600 font-bold';
+      }
+    }
+
+    const voiceController = new VoiceController();
+
+    // ==========================================
+    // 3. Modal UI Drawers (Inventory & CRM Leads)
+    // ==========================================
+    const modalOverlay = document.getElementById('modalOverlay');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalContent = document.getElementById('modalContent');
+    const btnCloseModal = document.getElementById('btnCloseModal');
+
+    btnCloseModal.addEventListener('click', () => {
+      modalOverlay.classList.add('hidden');
+      modalOverlay.classList.remove('flex');
+    });
+
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) {
+        modalOverlay.classList.add('hidden');
+        modalOverlay.classList.remove('flex');
+      }
+    });
+
+    document.getElementById('btnOpenInventory').addEventListener('click', async () => {
+      modalTitle.innerHTML = "<span>🚗</span> <span>Dealership Live Inventory (RAG Ground Truth)</span>";
+      modalContent.innerHTML = "<div class='text-slate-500 text-center py-6 animate-pulse'>Loading luxury vehicles...</div>";
+      modalOverlay.classList.remove('hidden');
+      modalOverlay.classList.add('flex');
+
+      try {
+        const res = await fetch('/catalog/vehicles');
+        const vehicles = await res.json();
+        if (!vehicles || vehicles.length === 0) {
+          modalContent.innerHTML = "<div class='text-slate-500 text-center py-6'>No vehicles in inventory.</div>";
+          return;
+        }
+        modalContent.innerHTML = vehicles.map(v => `
+          <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 hover:border-sky-400 hover:bg-sky-50/40 transition-all shadow-sm">
+            <div>
+              <div class="font-extrabold text-base text-slate-900 flex items-center gap-2">
+                ${v.make} ${v.model}
+                <span class="text-xs px-2.5 py-0.5 rounded-full bg-sky-100 border border-sky-200 text-sky-700 font-semibold">${v.variant}</span>
+              </div>
+              <div class="text-xs text-slate-600 mt-1.5 flex flex-wrap gap-2">
+                <span class="px-2 py-0.5 rounded-md bg-white border border-slate-200">${v.body_type}</span>
+                <span class="px-2 py-0.5 rounded-md bg-white border border-slate-200">${v.fuel_type}</span>
+                <span class="px-2 py-0.5 rounded-md bg-white border border-slate-200">${v.transmission}</span>
+                <span class="px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-700 font-semibold">${v.power_bhp} BHP</span>
+              </div>
+              <div class="text-[11px] text-slate-500 mt-1.5">Available: ${v.colors_available.join(', ')}</div>
+            </div>
+            <div class="text-left sm:text-right w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200">
+              <div class="font-black text-emerald-600 text-base">${v.price_display}</div>
+              <div class="text-xs text-slate-500 mt-1">In Stock: <span class="text-slate-900 font-bold">${v.in_stock_units} units</span></div>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        modalContent.innerHTML = `<div class="text-rose-600 py-4">Failed to load inventory: ${err.message}</div>`;
+      }
+    });
+
+    document.getElementById('btnOpenLeads').addEventListener('click', async () => {
+      modalTitle.innerHTML = "<span>👥</span> <span>Captured CRM Leads & Qualification</span>";
+      modalContent.innerHTML = "<div class='text-slate-500 text-center py-6 animate-pulse'>Loading sales leads...</div>";
+      modalOverlay.classList.remove('hidden');
+      modalOverlay.classList.add('flex');
+
+      try {
+        const res = await fetch('/leads');
+        const leads = await res.json();
+        if (!leads || leads.length === 0) {
+          modalContent.innerHTML = "<div class='text-slate-500 text-center py-8'>No sales leads captured yet.<br/><span class='text-xs text-slate-400 mt-1 inline-block'>Speak to Geeta and mention your vehicle interest, budget, or phone number to see live CRM extraction!</span></div>";
+          return;
+        }
+        modalContent.innerHTML = leads.map(l => `
+          <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 hover:border-indigo-400 transition-all shadow-sm">
+            <div class="flex justify-between items-center">
+              <div class="font-bold text-slate-900 text-base flex items-center gap-2">
+                <span>👤</span> ${l.customer_name || 'Prospect Customer'}
+              </div>
+              <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full ${l.status === 'QUALIFIED' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-sky-100 text-sky-700 border border-sky-200'}">${l.status}</span>
+            </div>
+            <div class="text-xs text-slate-700 mt-2 flex flex-wrap gap-2">
+              ${l.preferred_make ? `<span class="px-2 py-0.5 rounded-md bg-white border border-slate-200">Interest: <strong class="text-slate-900">${l.preferred_make} ${l.preferred_model || ''}</strong></span>` : ''}
+              ${l.budget_display ? `<span class="px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 font-semibold">Budget: <strong>${l.budget_display}</strong></span>` : ''}
+              ${l.phone_number ? `<span class="px-2 py-0.5 rounded-md bg-white border border-slate-200">📞 <strong class="text-slate-900">${l.phone_number}</strong></span>` : ''}
+            </div>
+            ${l.notes && l.notes.length > 0 ? `
+              <div class="mt-2 text-xs text-slate-500 border-t border-slate-200 pt-2 flex flex-col gap-1">
+                ${l.notes.slice(-2).map(n => `<div>• ${n}</div>`).join('')}
+              </div>
+            ` : ''}
+          </div>
+        `).join('');
+      } catch (err) {
+        modalContent.innerHTML = `<div class="text-rose-600 py-4">Failed to load leads: ${err.message}</div>`;
+      }
+    });
+  </script>
+</body>
+
+</html>
