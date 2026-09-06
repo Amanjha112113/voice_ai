@@ -4,9 +4,15 @@ Calculates and reports P50, P95, and P99 percentiles for latency benchmarks.
 """
 
 from typing import List, Dict, Any, Optional
-import numpy as np
-from .telemetry import TurnTelemetry
+import math
 import logging
+
+try:
+    import numpy as np
+except ImportError:
+    np = None  # type: ignore
+
+from .telemetry import TurnTelemetry
 
 logger = logging.getLogger(__name__)
 
@@ -30,14 +36,36 @@ class MetricsCollector:
     def compute_percentiles(self, values: List[float]) -> Dict[str, float]:
         if not values:
             return {"p50": 0.0, "p95": 0.0, "p99": 0.0, "min": 0.0, "max": 0.0, "avg": 0.0}
-        arr = np.array(values)
+
+        if np is not None:
+            arr = np.array(values)
+            return {
+                "p50": float(np.percentile(arr, 50)),
+                "p95": float(np.percentile(arr, 95)),
+                "p99": float(np.percentile(arr, 99)),
+                "min": float(np.min(arr)),
+                "max": float(np.max(arr)),
+                "avg": float(np.mean(arr)),
+            }
+
+        sorted_vals = sorted(values)
+        n = len(sorted_vals)
+
+        def _calc_p(p: float) -> float:
+            k = (n - 1) * (p / 100.0)
+            f = math.floor(k)
+            c = math.ceil(k)
+            if f == c:
+                return float(sorted_vals[int(k)])
+            return float(sorted_vals[f] * (c - k) + sorted_vals[c] * (k - f))
+
         return {
-            "p50": float(np.percentile(arr, 50)),
-            "p95": float(np.percentile(arr, 95)),
-            "p99": float(np.percentile(arr, 99)),
-            "min": float(np.min(arr)),
-            "max": float(np.max(arr)),
-            "avg": float(np.mean(arr)),
+            "p50": _calc_p(50),
+            "p95": _calc_p(95),
+            "p99": _calc_p(99),
+            "min": float(min(sorted_vals)),
+            "max": float(max(sorted_vals)),
+            "avg": float(sum(sorted_vals) / n),
         }
 
     def summary(self) -> Dict[str, Any]:
